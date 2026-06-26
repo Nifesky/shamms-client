@@ -1,0 +1,1 @@
+export const ADMIN_CODE = "SHAMMS-ADMIN-2026";
