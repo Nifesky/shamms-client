@@ -103,6 +103,16 @@ function AdminAllocationHistory() {
         .table-row:hover {
           background-color: rgba(255, 255, 255, 0.02) !important;
         }
+
+        @media (max-width: 768px) {
+          .history-layout {
+            flex-direction: column !important;
+          }
+          .history-sidebar {
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+        }
       `}</style>
 
       <h1 style={styles.title}>Allocation History</h1>
@@ -110,9 +120,9 @@ function AdminAllocationHistory() {
         View details and logs of past smart room allocation sessions
       </p>
 
-      <div style={styles.layout}>
+      <div className="history-layout" style={styles.layout}>
         {/* LEFT PANEL */}
-        <div style={styles.sidebar}>
+        <div className="history-sidebar" style={styles.sidebar}>
           <h3 style={styles.sectionTitle}>Sessions</h3>
 
           {sessions.length === 0 ? (
@@ -154,31 +164,33 @@ function AdminAllocationHistory() {
               {logs.length === 0 ? (
                 <p style={styles.empty}>Loading logs or no logs found in this session...</p>
               ) : (
-                <table style={styles.table}>
-                  <thead>
-                    <tr style={styles.trHead}>
-                      <th style={styles.th}>Student Name</th>
-                      <th style={styles.th}>Department</th>
-                      <th style={styles.th}>Level</th>
-                      <th style={styles.th}>Room Number</th>
-                      <th style={styles.th}>Capacity</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {logs.map((l) => (
-                      <tr key={l.id} className="table-row" style={styles.tr}>
-                        <td style={styles.td}>
-                          {l.student?.fullName || "Unknown Student"}
-                        </td>
-                        <td style={styles.td}>{l.courseOfStudy || l.student?.courseOfStudy || "General"}</td>
-                        <td style={styles.td}>{l.level} Level</td>
-                        <td style={{ ...styles.td, ...styles.roomNo }}>{l.room?.roomNumber || l.roomId}</td>
-                        <td style={styles.td}>{l.room?.capacity ? `${l.room.capacity}-Man` : "N/A"}</td>
+                <div className="table-wrapper" style={{ marginTop: 0 }}>
+                  <table style={styles.table}>
+                    <thead>
+                      <tr style={styles.trHead}>
+                        <th style={styles.th}>Student Name</th>
+                        <th style={styles.th}>Department</th>
+                        <th style={styles.th}>Level</th>
+                        <th style={styles.th}>Room Number</th>
+                        <th style={styles.th}>Capacity</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+
+                    <tbody>
+                      {logs.map((l) => (
+                        <tr key={l.id} className="table-row" style={styles.tr}>
+                          <td style={styles.td}>
+                            {l.student?.fullName || "Unknown Student"}
+                          </td>
+                          <td style={styles.td}>{l.courseOfStudy || l.student?.courseOfStudy || "General"}</td>
+                          <td style={styles.td}>{l.level} Level</td>
+                          <td style={{ ...styles.td, ...styles.roomNo }}>{l.room?.roomNumber || l.roomId}</td>
+                          <td style={styles.td}>{l.room?.capacity ? `${l.room.capacity}-Man` : "N/A"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </>
           )}
@@ -291,6 +303,7 @@ const styles = {
 
   td: {
     padding: "16px",
+    whiteSpace: "nowrap",
   },
 
   roomNo: {

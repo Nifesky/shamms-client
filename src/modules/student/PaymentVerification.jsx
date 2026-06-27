@@ -153,12 +153,14 @@ const styles = {
 
   card: {
     backgroundColor: "rgba(30, 41, 59, 0.45)",
-    padding: "30px",
+    padding: "30px 20px",
     borderRadius: "16px",
     border: "1px solid rgba(255, 255, 255, 0.04)",
     maxWidth: "600px",
+    width: "100%",
     marginBottom: "25px",
     boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+    boxSizing: "border-box",
   },
 
   form: {
@@ -197,6 +199,7 @@ const styles = {
     fontFamily: "'Plus Jakarta Sans', sans-serif",
     boxShadow: "0 6px 20px rgba(56, 189, 248, 0.15)",
     marginTop: "8px",
+    width: "100%",
   },
 
   message: {
@@ -215,6 +218,8 @@ const styles = {
     padding: "20px",
     borderRadius: "16px",
     maxWidth: "600px",
+    width: "100%",
+    boxSizing: "border-box",
   },
 
   infoTitle: {

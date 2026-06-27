@@ -121,79 +121,81 @@ function AdminPayments() {
         {payments.length === 0 ? (
           <p style={styles.empty}>No payment records found.</p>
         ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr style={styles.trHead}>
-                <th style={styles.th}>Student Name</th>
-                <th style={styles.th}>Matric Number</th>
-                <th style={styles.th}>Amount Paid</th>
-                <th style={styles.th}>Reference</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {payments.map(p => (
-                <tr key={p.id} className="table-row" style={styles.tr}>
-                  <td style={styles.td}>{p.fullName}</td>
-                  <td style={styles.td}>{p.matricNo}</td>
-                  <td style={styles.td}>₦{Number(p.amount)?.toLocaleString()}</td>
-                  <td style={{ ...styles.td, ...styles.ref }}>{p.reference}</td>
-                  <td style={styles.td}>
-                    <span style={{
-                      ...styles.badge,
-                      background:
-                        p.status === "Approved"
-                          ? "rgba(34, 197, 94, 0.15)"
-                          : p.status === "Rejected"
-                          ? "rgba(239, 68, 68, 0.15)"
-                          : "rgba(245, 158, 11, 0.15)",
-                      color:
-                        p.status === "Approved"
-                          ? "#4ADE80"
-                          : p.status === "Rejected"
-                          ? "#F87171"
-                          : "#FBBF24",
-                      border:
-                        p.status === "Approved"
-                          ? "1px solid rgba(34, 197, 94, 0.2)"
-                          : p.status === "Rejected"
-                          ? "1px solid rgba(239, 68, 68, 0.2)"
-                          : "1px solid rgba(245, 158, 11, 0.2)"
-                    }}>
-                      {p.status || "Pending"}
-                    </span>
-                  </td>
-
-                  <td style={{ ...styles.td, ...styles.actions }}>
-                    {p.status === "pending" && (
-                      <>
-                        <button
-                          onClick={() => updateStatus(p.id, "Approved")}
-                          className="approve-btn"
-                          style={styles.approve}
-                        >
-                          Approve
-                        </button>
-
-                        <button
-                          onClick={() => updateStatus(p.id, "Rejected")}
-                          className="reject-btn"
-                          style={styles.reject}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    {p.status !== "pending" && (
-                      <span style={styles.completedText}>Reviewed</span>
-                    )}
-                  </td>
+          <div className="table-wrapper" style={{ marginTop: 0 }}>
+            <table style={styles.table}>
+              <thead>
+                <tr style={styles.trHead}>
+                  <th style={styles.th}>Student Name</th>
+                  <th style={styles.th}>Matric Number</th>
+                  <th style={styles.th}>Amount Paid</th>
+                  <th style={styles.th}>Reference</th>
+                  <th style={styles.th}>Status</th>
+                  <th style={styles.th}>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {payments.map(p => (
+                  <tr key={p.id} className="table-row" style={styles.tr}>
+                    <td style={styles.td}>{p.fullName}</td>
+                    <td style={styles.td}>{p.matricNo}</td>
+                    <td style={styles.td}>₦{Number(p.amount)?.toLocaleString()}</td>
+                    <td style={{ ...styles.td, ...styles.ref }}>{p.reference}</td>
+                    <td style={styles.td}>
+                      <span style={{
+                        ...styles.badge,
+                        background:
+                          p.status === "Approved"
+                            ? "rgba(34, 197, 94, 0.15)"
+                            : p.status === "Rejected"
+                            ? "rgba(239, 68, 68, 0.15)"
+                            : "rgba(245, 158, 11, 0.15)",
+                        color:
+                          p.status === "Approved"
+                            ? "#4ADE80"
+                            : p.status === "Rejected"
+                            ? "#F87171"
+                            : "#FBBF24",
+                        border:
+                          p.status === "Approved"
+                            ? "1px solid rgba(34, 197, 94, 0.2)"
+                            : p.status === "Rejected"
+                            ? "1px solid rgba(239, 68, 68, 0.2)"
+                            : "1px solid rgba(245, 158, 11, 0.2)"
+                      }}>
+                        {p.status || "Pending"}
+                      </span>
+                    </td>
+
+                    <td style={{ ...styles.td, ...styles.actions }}>
+                      {p.status === "pending" && (
+                        <>
+                          <button
+                            onClick={() => updateStatus(p.id, "Approved")}
+                            className="approve-btn"
+                            style={styles.approve}
+                          >
+                            Approve
+                          </button>
+
+                          <button
+                            onClick={() => updateStatus(p.id, "Rejected")}
+                            className="reject-btn"
+                            style={styles.reject}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                      {p.status !== "pending" && (
+                        <span style={styles.completedText}>Reviewed</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
@@ -223,10 +225,9 @@ const styles = {
 
   tableCard: {
     background: "rgba(20, 26, 46, 0.4)",
-    padding: "25px",
+    padding: "25px 20px",
     borderRadius: "20px",
     border: "1px solid rgba(255, 255, 255, 0.04)",
-    overflowX: "auto",
   },
 
   table: {
@@ -253,6 +254,8 @@ const styles = {
 
   td: {
     padding: "16px",
+    color: "#E2E8F0",
+    whiteSpace: "nowrap",
   },
 
   ref: {
@@ -267,6 +270,7 @@ const styles = {
     fontSize: "11.5px",
     fontWeight: "700",
     display: "inline-block",
+    whiteSpace: "nowrap",
   },
 
   actions: {

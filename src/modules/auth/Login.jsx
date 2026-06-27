@@ -90,9 +90,15 @@ function Login() {
           color: #F4B400 !important;
           opacity: 0.9;
         }
+        @media (max-width: 480px) {
+          .auth-card {
+            padding: 30px 20px !important;
+            border-radius: 16px !important;
+          }
+        }
       `}</style>
 
-      <div style={styles.card}>
+      <div className="auth-card" style={styles.card}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
           <Logo size={46} textColor="#F4B400" fontSize="34px" />
         </div>
@@ -192,7 +198,8 @@ const styles = {
   },
 
   card: {
-    width: "440px",
+    width: "100%",
+    maxWidth: "440px",
     padding: "45px 35px",
     borderRadius: "24px",
     background: "rgba(20, 26, 46, 0.75)",

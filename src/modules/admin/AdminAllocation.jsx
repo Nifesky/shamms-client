@@ -132,10 +132,20 @@ function AdminAllocation() {
         .table-row:hover {
           background-color: rgba(255, 255, 255, 0.02) !important;
         }
+        @media (max-width: 768px) {
+          .allocation-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 15px !important;
+          }
+          .allocation-header button {
+            width: 100% !important;
+          }
+        }
       `}</style>
 
       {/* HEADER */}
-      <div style={styles.header}>
+      <div className="allocation-header" style={styles.header}>
         <div>
           <h1 style={styles.title}>
             Smart Room Allocation
@@ -183,7 +193,7 @@ function AdminAllocation() {
       </div>
 
       {/* STATS */}
-      <div style={styles.grid}>
+      <div className="responsive-grid-4" style={styles.grid}>
 
         <div className="stat-card" style={styles.card}>
           <h3 style={styles.cardLabel}>Ready for Allocation (Paid)</h3>
@@ -209,45 +219,47 @@ function AdminAllocation() {
 
       {/* STUDENT LIST */}
       <div style={styles.tableCard}>
-        <h3 style={{ color: "#38BDF8", marginBottom: "20px", fontSize: "18px", fontFamily: "'Outfit', sans-serif" }}>Unassigned Students Queue</h3>
+        <h3 style={{ color: "#38BDF8", marginBottom: "5px", fontSize: "18px", fontFamily: "'Outfit', sans-serif" }}>Unassigned Students Queue</h3>
 
         {unassignedStudents.length === 0 ? (
           <p style={styles.empty}>All registered students have been assigned rooms.</p>
         ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr style={styles.trHead}>
-                <th style={styles.th}>Name</th>
-                <th style={styles.th}>Gender</th>
-                <th style={styles.th}>Department</th>
-                <th style={styles.th}>Level</th>
-                <th style={styles.th}>Matric No</th>
-                <th style={styles.th}>Payment Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {unassignedStudents.map(s => (
-                <tr key={s.id} className="table-row" style={styles.tr}>
-                  <td style={styles.td}>{s.fullName}</td>
-                  <td style={styles.td}>{s.gender || "N/A"}</td>
-                  <td style={styles.td}>{s.courseOfStudy || "General"}</td>
-                  <td style={styles.td}>{s.level} Level</td>
-                  <td style={styles.td}>{s.matricNo}</td>
-                  <td style={styles.td}>
-                    <span style={{
-                      ...styles.badge,
-                      background: s.paymentStatus === "verified" ? "rgba(34, 197, 94, 0.15)" : "rgba(245, 158, 11, 0.15)",
-                      color: s.paymentStatus === "verified" ? "#4ADE80" : "#FBBF24",
-                      border: s.paymentStatus === "verified" ? "1px solid rgba(34, 197, 94, 0.2)" : "1px solid rgba(245, 158, 11, 0.2)"
-                    }}>
-                      {s.paymentStatus === "verified" ? "Verified" : "Pending Approval"}
-                    </span>
-                  </td>
+          <div className="table-wrapper">
+            <table style={styles.table}>
+              <thead>
+                <tr style={styles.trHead}>
+                  <th style={styles.th}>Name</th>
+                  <th style={styles.th}>Gender</th>
+                  <th style={styles.th}>Department</th>
+                  <th style={styles.th}>Level</th>
+                  <th style={styles.th}>Matric No</th>
+                  <th style={styles.th}>Payment Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {unassignedStudents.map(s => (
+                  <tr key={s.id} className="table-row" style={styles.tr}>
+                    <td style={styles.td}>{s.fullName}</td>
+                    <td style={styles.td}>{s.gender || "N/A"}</td>
+                    <td style={styles.td}>{s.courseOfStudy || "General"}</td>
+                    <td style={styles.td}>{s.level} Level</td>
+                    <td style={styles.td}>{s.matricNo}</td>
+                    <td style={styles.td}>
+                      <span style={{
+                        ...styles.badge,
+                        background: s.paymentStatus === "verified" ? "rgba(34, 197, 94, 0.15)" : "rgba(245, 158, 11, 0.15)",
+                        color: s.paymentStatus === "verified" ? "#4ADE80" : "#FBBF24",
+                        border: s.paymentStatus === "verified" ? "1px solid rgba(34, 197, 94, 0.2)" : "1px solid rgba(245, 158, 11, 0.2)"
+                      }}>
+                        {s.paymentStatus === "verified" ? "Verified" : "Pending Approval"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -312,9 +324,6 @@ const styles = {
   },
 
   grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: "20px",
     marginBottom: "30px",
   },
 
@@ -344,7 +353,7 @@ const styles = {
 
   tableCard: {
     background: "rgba(20, 26, 46, 0.4)",
-    padding: "25px",
+    padding: "25px 20px",
     borderRadius: "20px",
     border: "1px solid rgba(255, 255, 255, 0.04)",
   },
@@ -374,6 +383,7 @@ const styles = {
   td: {
     padding: "16px",
     color: "#E2E8F0",
+    whiteSpace: "nowrap",
   },
 
   badge: {
@@ -382,6 +392,7 @@ const styles = {
     fontSize: "11.5px",
     fontWeight: "700",
     display: "inline-block",
+    whiteSpace: "nowrap",
   },
 
   empty: {

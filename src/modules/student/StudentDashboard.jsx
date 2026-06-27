@@ -116,7 +116,7 @@ function StudentDashboard() {
       {isAllocated ? (
         <div style={styles.successBanner}>
           <div style={{ fontSize: "24px" }}>🎉</div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: "200px" }}>
             <h4 style={styles.bannerTitle}>Hostel Room Allocated!</h4>
             <p style={styles.bannerText}>
               You have been successfully assigned to Room {userData.roomId}. Head over to the "My Room" section to view details.
@@ -129,7 +129,7 @@ function StudentDashboard() {
       ) : paymentVerified ? (
         <div style={styles.infoBanner}>
           <div style={{ fontSize: "24px" }}>⚡</div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: "200px" }}>
             <h4 style={styles.bannerTitle}>Payment Verified! Allocation Pending</h4>
             <p style={styles.bannerText}>
               Your hostel payment has been verified by the administrator. You are currently queued in the Smart Allocation engine.
@@ -139,7 +139,7 @@ function StudentDashboard() {
       ) : hasPendingPayment ? (
         <div style={styles.warningBanner}>
           <div style={{ fontSize: "24px" }}>⏳</div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: "200px" }}>
             <h4 style={styles.bannerTitle}>Payment Review In Progress</h4>
             <p style={styles.bannerText}>
               Your payment submission is currently undergoing review. Once verified, room allocation will begin automatically.
@@ -149,7 +149,7 @@ function StudentDashboard() {
       ) : (
         <div style={styles.dangerBanner}>
           <div style={{ fontSize: "24px" }}>💳</div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: "200px" }}>
             <h4 style={styles.bannerTitle}>Payment Required for Allocation</h4>
             <p style={styles.bannerText}>
               You must verify payment before being allocated a hostel room. Please check the available hostels below and pay your fee.
@@ -162,7 +162,7 @@ function StudentDashboard() {
       )}
 
       {/* DASHBOARD CARDS GRID */}
-      <div style={styles.cardGrid}>
+      <div className="responsive-grid-4" style={styles.cardGrid}>
         <div className="dashboard-card" style={styles.card}>
           <h3 style={styles.cardTitle}>Matric Number</h3>
           <p style={styles.cardValue}>{userData?.matricNo}</p>
@@ -190,7 +190,7 @@ function StudentDashboard() {
           <h2 style={styles.sectionTitle}>Available {userData?.gender} Hostels & Fees</h2>
           <p style={styles.sectionSubtitle}>Select and make payment for your preferred category to secure your bed space.</p>
 
-          <div style={styles.hostelsGrid}>
+          <div className="responsive-grid-3" style={styles.hostelsGrid}>
             {hostels.length === 0 ? (
               <p style={styles.noHostels}>No hostels available matching your gender category at this moment.</p>
             ) : (
@@ -267,6 +267,7 @@ const styles = {
     padding: "16px 20px",
     color: "#34D399",
     marginBottom: "30px",
+    flexWrap: "wrap",
   },
   infoBanner: {
     display: "flex",
@@ -278,6 +279,7 @@ const styles = {
     padding: "16px 20px",
     color: "#38BDF8",
     marginBottom: "30px",
+    flexWrap: "wrap",
   },
   warningBanner: {
     display: "flex",
@@ -289,6 +291,7 @@ const styles = {
     padding: "16px 20px",
     color: "#FBBF24",
     marginBottom: "30px",
+    flexWrap: "wrap",
   },
   dangerBanner: {
     display: "flex",
@@ -300,6 +303,7 @@ const styles = {
     padding: "16px 20px",
     color: "#F87171",
     marginBottom: "30px",
+    flexWrap: "wrap",
   },
   bannerTitle: {
     margin: 0,
@@ -336,9 +340,6 @@ const styles = {
     fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
   cardGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "20px",
     marginBottom: "40px",
   },
   card: {
@@ -365,7 +366,7 @@ const styles = {
   hostelsSection: {
     background: "rgba(15, 23, 42, 0.3)",
     border: "1px solid rgba(255, 255, 255, 0.03)",
-    padding: "30px",
+    padding: "30px 20px",
     borderRadius: "20px",
     marginBottom: "30px",
   },
@@ -382,9 +383,6 @@ const styles = {
     color: "#64748B",
   },
   hostelsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: "20px",
     marginBottom: "30px",
   },
   hostelCard: {
