@@ -1,6 +1,7 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { auth } from "../config/firebase";
+import { auth, db } from "../config/firebase";
 import { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
 import Logo from "../components/Logo";
 
 function StudentLayout() {
@@ -8,6 +9,24 @@ function StudentLayout() {
   const location = useLocation();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userIsAllocated, setUserIsAllocated] = useState(false);
+
+  // Fetch student profile to dynamically check allocation status
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) return;
+        const snap = await getDoc(doc(db, "users", user.uid));
+        if (snap.exists()) {
+          setUserIsAllocated(!!snap.data().roomAssigned);
+        }
+      } catch (err) {
+        console.log("Error layout check:", err);
+      }
+    };
+    fetchProfile();
+  }, [location.pathname]);
 
   // Close sidebar on navigation change (for mobile)
   useEffect(() => {
@@ -125,6 +144,16 @@ function StudentLayout() {
           >
             📊 Dashboard
           </button>
+
+          {!userIsAllocated && (
+            <button
+              onClick={() => navigate("/student/hostel-allocation")}
+              className={isActive("/student/hostel-allocation") ? "nav-btn nav-btn-active" : "nav-btn"}
+              style={btnStyle(isActive("/student/hostel-allocation"))}
+            >
+              🏢 Hostel Selection
+            </button>
+          )}
 
           <button
             onClick={() => navigate("/student/my-room")}

@@ -1,61 +1,122 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { auth, db } from "../../config/firebase";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 function StudentDashboard() {
   const [userData, setUserData] = useState(null);
   const [hostels, setHostels] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [activeReservation, setActiveReservation] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [timerText, setTimerText] = useState("");
 
   const navigate = useNavigate();
+  const timerIntervalRef = useRef(null);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const user = auth.currentUser;
+  const fetchDashboardData = async () => {
+    try {
+      const user = auth.currentUser;
 
-        if (!user) {
-          navigate("/login");
-          return;
-        }
-
-        // Fetch User Data
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const uData = docSnap.data();
-          setUserData(uData);
-
-          // Fetch Hostels matching user's gender
-          if (uData.gender) {
-            const hQuery = query(
-              collection(db, "hostels"),
-              where("gender", "==", uData.gender)
-            );
-            const hSnap = await getDocs(hQuery);
-            setHostels(hSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-          }
-
-          // Fetch User's Payments
-          const pQuery = query(
-            collection(db, "payments"),
-            where("studentId", "==", user.uid)
-          );
-          const pSnap = await getDocs(pQuery);
-          setPayments(pSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        }
-      } catch (error) {
-        console.log(error.message);
+      if (!user) {
+        navigate("/login");
+        return;
       }
 
-      setLoading(false);
-    };
+      // Fetch User Data
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
 
+      if (docSnap.exists()) {
+        const uData = docSnap.data();
+        setUserData(uData);
+
+        // Fetch active reservation
+        const resSnap = await getDoc(doc(db, "reservations", user.uid));
+        if (resSnap.exists()) {
+          const resData = resSnap.data();
+          if (new Date(resData.expiresAt) > new Date()) {
+            const hSnap = await getDoc(doc(db, "hostels", resData.hostelId));
+            const rSnap = await getDoc(doc(db, "rooms", resData.roomId));
+            setActiveReservation({
+              ...resData,
+              hostelName: hSnap.exists() ? hSnap.data().hostelName : "Unknown Hostel",
+              roomNumber: rSnap.exists() ? rSnap.data().roomNumber : "Unknown Room",
+            });
+          } else {
+            // Clean up expired in DB
+            await deleteDoc(doc(db, "reservations", user.uid));
+            setActiveReservation(null);
+          }
+        } else {
+          setActiveReservation(null);
+        }
+
+        // Fetch Hostels matching user's gender
+        if (uData.gender) {
+          const hQuery = query(
+            collection(db, "hostels"),
+            where("gender", "==", uData.gender)
+          );
+          const hSnap = await getDocs(hQuery);
+          setHostels(hSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        }
+
+        // Fetch User's Payments
+        const pQuery = query(
+          collection(db, "payments"),
+          where("studentId", "==", user.uid)
+        );
+        const pSnap = await getDocs(pQuery);
+        setPayments(pSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      }
+    } catch (error) {
+      console.log(error.message);
+    }
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchDashboardData();
+    return () => clearInterval(timerIntervalRef.current);
   }, [navigate]);
+
+  // RESERVATION TIMER LOOP
+  useEffect(() => {
+    if (activeReservation && activeReservation.status === "reserved") {
+      clearInterval(timerIntervalRef.current);
+      const targetTime = new Date(activeReservation.expiresAt).getTime();
+
+      const updateTimer = () => {
+        const now = new Date().getTime();
+        const diff = targetTime - now;
+
+        if (diff <= 0) {
+          clearInterval(timerIntervalRef.current);
+          setTimerText("Expired!");
+          setActiveReservation(null);
+          const user = auth.currentUser;
+          if (user) {
+            deleteDoc(doc(db, "reservations", user.uid)).then(() => {
+              fetchDashboardData();
+            });
+          }
+        } else {
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          setTimerText(`${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`);
+        }
+      };
+
+      updateTimer();
+      timerIntervalRef.current = setInterval(updateTimer, 1000);
+    } else {
+      clearInterval(timerIntervalRef.current);
+      setTimerText("");
+    }
+    return () => clearInterval(timerIntervalRef.current);
+  }, [activeReservation]);
 
   if (loading) {
     return <div style={styles.loading}>Loading dashboard...</div>;
@@ -112,6 +173,26 @@ function StudentDashboard() {
         <p style={styles.subText}>Student Hostel Portal & Dashboard</p>
       </div>
 
+      {/* ACTIVE RESERVATION CARD */}
+      {!isAllocated && activeReservation && activeReservation.status === "reserved" && (
+        <div style={styles.reservationBanner}>
+          <div style={{ fontSize: "28px" }}>⏳</div>
+          <div style={{ flex: 1, minWidth: "200px" }}>
+            <h4 style={styles.bannerTitle}>Active Room Reservation Hold ({timerText})</h4>
+            <p style={styles.bannerText}>
+              You have temporarily held space in <strong>Room {activeReservation.roomNumber}</strong> (Hostel: {activeReservation.hostelName}). Submit transaction reference before release.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/student/payment-verification")}
+            className="banner-btn"
+            style={styles.bannerBtnVerify}
+          >
+            Complete Payment Reference 💳
+          </button>
+        </div>
+      )}
+
       {/* ALLOCATION STATE BANNER */}
       {isAllocated ? (
         <div style={styles.successBanner}>
@@ -146,20 +227,20 @@ function StudentDashboard() {
             </p>
           </div>
         </div>
-      ) : (
+      ) : !activeReservation ? (
         <div style={styles.dangerBanner}>
-          <div style={{ fontSize: "24px" }}>💳</div>
+          <div style={{ fontSize: "24px" }}>🏢</div>
           <div style={{ flex: 1, minWidth: "200px" }}>
-            <h4 style={styles.bannerTitle}>Payment Required for Allocation</h4>
+            <h4 style={styles.bannerTitle}>Room Space Selection & Payment Required</h4>
             <p style={styles.bannerText}>
-              You must verify payment before being allocated a hostel room. Please check the available hostels below and pay your fee.
+              Please select and reserve a room space, then submit your receipt reference to lock your bed space.
             </p>
           </div>
-          <button onClick={() => navigate("/student/payment-verification")} className="banner-btn" style={styles.bannerBtnDanger}>
-            Pay Now
+          <button onClick={() => navigate("/student/hostel-allocation")} className="banner-btn" style={styles.bannerBtnDanger}>
+            Select Room Space
           </button>
         </div>
-      )}
+      ) : null}
 
       {/* DASHBOARD CARDS GRID */}
       <div className="responsive-grid-4" style={styles.cardGrid}>
@@ -184,11 +265,11 @@ function StudentDashboard() {
         </div>
       </div>
 
-      {/* AVAILABLE HOSTELS SECTION - BEFORE CONTINUOUS ALLOCATION */}
+      {/* AVAILABLE HOSTELS SECTION */}
       {!isAllocated && (
         <div style={styles.hostelsSection}>
           <h2 style={styles.sectionTitle}>Available {userData?.gender} Hostels & Fees</h2>
-          <p style={styles.sectionSubtitle}>Select and make payment for your preferred category to secure your bed space.</p>
+          <p style={styles.sectionSubtitle}>Select and reserve a room category to lock your bed space before payment.</p>
 
           <div className="responsive-grid-3" style={styles.hostelsGrid}>
             {hostels.length === 0 ? (
@@ -219,13 +300,13 @@ function StudentDashboard() {
             )}
           </div>
 
-          {!paymentVerified && !hasPendingPayment && (
+          {!paymentVerified && !hasPendingPayment && !activeReservation && (
             <div style={styles.ctaBox}>
               <p style={styles.ctaText}>
-                Have you already made the payment for your preferred hostel? Proceed to submit your payment receipt reference.
+                Ready to choose your hostel room? Select a hostel and hold your specific room space.
               </p>
-              <button onClick={() => navigate("/student/payment-verification")} className="cta-btn" style={styles.ctaButton}>
-                Submit Payment Reference 💳
+              <button onClick={() => navigate("/student/hostel-allocation")} className="cta-btn" style={styles.ctaButton}>
+                Reserve Room Space 🏢
               </button>
             </div>
           )}
@@ -256,6 +337,18 @@ const styles = {
     color: "#64748B",
     fontSize: "14.5px",
     margin: "6px 0 0 0",
+  },
+  reservationBanner: {
+    display: "flex",
+    alignItems: "center",
+    gap: "15px",
+    background: "rgba(245, 158, 11, 0.12)",
+    border: "1px solid rgba(245, 158, 11, 0.25)",
+    borderRadius: "16px",
+    padding: "16px 20px",
+    color: "#FBBF24",
+    marginBottom: "30px",
+    flexWrap: "wrap",
   },
   successBanner: {
     display: "flex",
@@ -328,12 +421,23 @@ const styles = {
     fontSize: "13px",
     fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
-  bannerBtnDanger: {
+  bannerBtnVerify: {
     padding: "8px 16px",
-    background: "#EF4444",
+    background: "#F59E0B",
     border: "none",
     borderRadius: "8px",
-    color: "#FFFFFF",
+    color: "#0F172A",
+    fontWeight: "700",
+    cursor: "pointer",
+    fontSize: "13px",
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  bannerBtnDanger: {
+    padding: "8px 16px",
+    background: "#38BDF8",
+    border: "none",
+    borderRadius: "8px",
+    color: "#0F172A",
     fontWeight: "700",
     cursor: "pointer",
     fontSize: "13px",

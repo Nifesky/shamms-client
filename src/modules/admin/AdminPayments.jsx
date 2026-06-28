@@ -4,7 +4,10 @@ import {
   collection,
   getDocs,
   doc,
-  updateDoc
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  addDoc
 } from "firebase/firestore";
 
 function AdminPayments() {
@@ -15,11 +18,23 @@ function AdminPayments() {
     setLoading(true);
 
     try {
-      // Fetch users to build a map of student details
+      // Fetch users, hostels, and rooms for lookups
       const usersSnap = await getDocs(collection(db, "users"));
       const usersMap = {};
       usersSnap.docs.forEach(uDoc => {
         usersMap[uDoc.id] = uDoc.data();
+      });
+
+      const hostelsSnap = await getDocs(collection(db, "hostels"));
+      const hostelsMap = {};
+      hostelsSnap.docs.forEach(hDoc => {
+        hostelsMap[hDoc.id] = hDoc.data();
+      });
+
+      const roomsSnap = await getDocs(collection(db, "rooms"));
+      const roomsMap = {};
+      roomsSnap.docs.forEach(rDoc => {
+        roomsMap[rDoc.id] = rDoc.data();
       });
 
       // Fetch payments
@@ -27,11 +42,15 @@ function AdminPayments() {
       const data = snap.docs.map(pDoc => {
         const pData = pDoc.data();
         const student = usersMap[pData.studentId] || {};
+        const hostel = hostelsMap[pData.hostelId] || {};
+        const room = roomsMap[pData.roomId] || {};
         return {
           id: pDoc.id,
           ...pData,
           fullName: student.fullName || "Unknown Student",
-          matricNo: student.matricNo || "N/A"
+          matricNo: student.matricNo || "N/A",
+          hostelName: hostel.hostelName || "N/A",
+          roomNumber: room.roomNumber || "N/A"
         };
       });
 
@@ -40,7 +59,7 @@ function AdminPayments() {
 
       setPayments(data);
     } catch (err) {
-      console.log(err);
+      console.log("Error loading payments view:", err);
     }
 
     setLoading(false);
@@ -50,28 +69,80 @@ function AdminPayments() {
     fetchPayments();
   }, []);
 
-  const updateStatus = async (id, status) => {
+  const handleApprove = async (id) => {
     try {
       const payment = payments.find(p => p.id === id);
       if (!payment) return;
 
-      // Update payment doc
+      // 1. Update payment doc status
       await updateDoc(doc(db, "payments", id), {
-        status
+        status: "Approved"
       });
 
-      // Update user doc paymentStatus
-      if (payment.studentId) {
-        await updateDoc(doc(db, "users", payment.studentId), {
-          paymentStatus: status === "Approved" ? "verified" : "rejected"
+      // 2. Add allocation document
+      await addDoc(collection(db, "allocations"), {
+        studentId: payment.studentId,
+        roomId: payment.roomId,
+        hostelId: payment.hostelId,
+        allocationDate: new Date().toISOString()
+      });
+
+      // 3. Update room occupants array and count
+      const roomRef = doc(db, "rooms", payment.roomId);
+      const roomSnap = await getDoc(roomRef);
+      if (roomSnap.exists()) {
+        const currentOccupants = roomSnap.data().occupants || [];
+        if (!currentOccupants.includes(payment.studentId)) {
+          currentOccupants.push(payment.studentId);
+        }
+        await updateDoc(roomRef, {
+          occupants: currentOccupants,
+          occupiedSlots: currentOccupants.length
         });
       }
 
-      alert(`Payment status updated to ${status} ✔`);
+      // 4. Update student user document
+      await updateDoc(doc(db, "users", payment.studentId), {
+        roomAssigned: true,
+        roomId: payment.roomId,
+        hostelId: payment.hostelId,
+        paymentStatus: "verified"
+      });
+
+      // 5. Delete reservation document to release the space hold
+      await deleteDoc(doc(db, "reservations", payment.studentId));
+
+      alert("Payment approved and room space officially allocated successfully! ✔");
       fetchPayments();
     } catch (err) {
       console.log(err);
-      alert("Failed to update status");
+      alert("Failed to approve payment: " + err.message);
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      const payment = payments.find(p => p.id === id);
+      if (!payment) return;
+
+      // 1. Update payment doc status
+      await updateDoc(doc(db, "payments", id), {
+        status: "Rejected"
+      });
+
+      // 2. Update user profile status
+      await updateDoc(doc(db, "users", payment.studentId), {
+        paymentStatus: "rejected"
+      });
+
+      // 3. Release the reserved space hold
+      await deleteDoc(doc(db, "reservations", payment.studentId));
+
+      alert("Payment rejected and reserved room hold released. ✔");
+      fetchPayments();
+    } catch (err) {
+      console.log(err);
+      alert("Failed to reject payment: " + err.message);
     }
   };
 
@@ -114,7 +185,7 @@ function AdminPayments() {
 
       <h2 style={styles.title}>Payment Management</h2>
       <p style={styles.subtitle}>
-        Approve or reject student payments to verify their eligibility for room allocation
+        Approve or reject student payments to verify and finalize room allocations
       </p>
 
       <div style={styles.tableCard}>
@@ -126,8 +197,9 @@ function AdminPayments() {
               <thead>
                 <tr style={styles.trHead}>
                   <th style={styles.th}>Student Name</th>
-                  <th style={styles.th}>Matric Number</th>
-                  <th style={styles.th}>Amount Paid</th>
+                  <th style={styles.th}>Matric</th>
+                  <th style={styles.th}>Reserved Space</th>
+                  <th style={styles.th}>Amount</th>
                   <th style={styles.th}>Reference</th>
                   <th style={styles.th}>Status</th>
                   <th style={styles.th}>Actions</th>
@@ -139,6 +211,9 @@ function AdminPayments() {
                   <tr key={p.id} className="table-row" style={styles.tr}>
                     <td style={styles.td}>{p.fullName}</td>
                     <td style={styles.td}>{p.matricNo}</td>
+                    <td style={styles.td}>
+                      <strong>Room {p.roomNumber}</strong> ({p.hostelName})
+                    </td>
                     <td style={styles.td}>₦{Number(p.amount)?.toLocaleString()}</td>
                     <td style={{ ...styles.td, ...styles.ref }}>{p.reference}</td>
                     <td style={styles.td}>
@@ -171,7 +246,7 @@ function AdminPayments() {
                       {p.status === "pending" && (
                         <>
                           <button
-                            onClick={() => updateStatus(p.id, "Approved")}
+                            onClick={() => handleApprove(p.id)}
                             className="approve-btn"
                             style={styles.approve}
                           >
@@ -179,7 +254,7 @@ function AdminPayments() {
                           </button>
 
                           <button
-                            onClick={() => updateStatus(p.id, "Rejected")}
+                            onClick={() => handleReject(p.id)}
                             className="reject-btn"
                             style={styles.reject}
                           >
